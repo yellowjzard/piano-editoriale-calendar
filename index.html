@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PIANO EDITORIALEy</title>
+    <title>Dashboard PED GCERTI Italy</title>
     <style>
         /* Reset e Stili Base */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -165,7 +165,7 @@
                 <button class="close-btn" onclick="closeModal('apiModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: 15px;">La chiave API di sistema sembra non funzionare. Incolla qui sotto la chiave JSONBin valida.</p>
+                <p style="margin-bottom: 15px;">Sembra esserci un problema con la chiave. Incolla la tua chiave JSONBin valida per riprovare.</p>
                 <input type="text" id="fallbackApiKey" placeholder="Es. $2a$10$..." style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; margin-bottom: 15px;">
                 <button class="btn-primary" onclick="retryUploadWithNewKey()" style="width: 100%;">Riprova Condivisione</button>
             </div>
@@ -260,10 +260,9 @@
 <div id="printView" class="print-view"></div>
 
 <script>
-    // La tua chiave corretta
+    // La tua NUOVA CHIAVE, pulita e definitiva
     let FIXED_API_KEY = "$2a$10$x0G9f1.jBQqCm56eON.wxucZSRjHA6pWJ3dAQsVOJtHFIWX94ivbm"; 
     
-    let tempKey = "";
     let calendarData = [];
     let isShareMode = false;
     let companyLogoBase64 = ""; // VARIABILE PER SALVARE IL LOGO
@@ -278,7 +277,7 @@
             loadFromCloud(binId);
         } else {
             setupDragDrop();
-            setupLogoUpload(); // Avvia il listener del logo
+            setupLogoUpload(); 
         }
     });
 
@@ -289,7 +288,7 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    companyLogoBase64 = event.target.result; // Salva in formato Base64
+                    companyLogoBase64 = event.target.result; 
                     const logoPreview = document.getElementById('logoPreview');
                     logoPreview.src = companyLogoBase64;
                     logoPreview.style.display = 'block';
@@ -299,9 +298,10 @@
         });
     }
 
-    // --- CLOUD ---
+    // --- MODIFICA FONDAMENTALE: IGNORA LA MEMORIA DEL BROWSER ---
     function getApiKey() {
-        return tempKey || localStorage.getItem('jsonbin_manual_key') || FIXED_API_KEY;
+        // Usa solo la nuova chiave scritta nel codice
+        return FIXED_API_KEY;
     }
 
     function initShareProcess() {
@@ -309,7 +309,6 @@
     }
 
     async function uploadToCloud(key) {
-        key = key.trim();
         document.getElementById('shareModal').classList.add('active');
         document.getElementById('shareLoading').style.display = 'block';
         document.getElementById('shareResult').style.display = 'none';
@@ -319,7 +318,7 @@
             const payload = {
                 title: customTitle,
                 data: calendarData,
-                logo: companyLogoBase64, // INVIA IL LOGO AL CLOUD
+                logo: companyLogoBase64,
                 created: new Date().toISOString(),
                 author: 'GCERTI'
             };
@@ -359,10 +358,10 @@
     function retryUploadWithNewKey() {
         const inputKey = document.getElementById('fallbackApiKey').value.trim();
         if(inputKey.length < 10) return alert("Chiave troppo corta o non valida");
-        localStorage.setItem('jsonbin_manual_key', inputKey);
-        tempKey = inputKey;
+        // Se inserisci la chiave dal popup, aggiorna la variabile principale
+        FIXED_API_KEY = inputKey;
         closeModal('apiModal');
-        uploadToCloud(tempKey);
+        uploadToCloud(FIXED_API_KEY);
     }
 
     async function loadFromCloud(binId) {
@@ -375,7 +374,7 @@
             let response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`);
             if (!response.ok) {
                 response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-                    headers: { 'X-Access-Key': getApiKey() }
+                    headers: { 'X-Master-Key': getApiKey() } // Corretto l'header qui
                 });
             }
             if (!response.ok) throw new Error("Calendario non trovato o scaduto.");
@@ -383,7 +382,6 @@
             const json = await response.json();
             calendarData = json.record.data;
 
-            // CARICA IL LOGO SE PRESENTE
             if (json.record.logo) {
                 companyLogoBase64 = json.record.logo;
                 const shareLogoPreview = document.getElementById('shareLogoPreview');
